@@ -1,11 +1,15 @@
 import { read, utils, writeFile } from "xlsx";
 
 const Home = () => {
-  let primaryData = [];
-  let secondaryData = [];
+  let file1Data = [];
+  let file2Data = [];
   let differences = []; //{ SKU: "", "Primary Price": "", "Secondary Price": "" };
-  // let primaryKeywordCol = " Price ";
-  // let secondaryKeywordCol = "Price";
+
+  const commonKey = "SKU";
+  const compareKey1 = "Price";
+  const compareKey2 = "Price";
+  const conditionKey = "Item";
+  const conditionValue = "Product" || "None";
 
   // ------------------------------------
   // handle functions
@@ -31,13 +35,13 @@ const Home = () => {
     // return jsonDataObj;
     const saveData = (fileSource) => {
       console.log("fileSource", fileSource);
-      if (fileSource === "upload-primary") {
-        primaryData = jsonDataObj;
-        console.log("primaryData", primaryData);
+      if (fileSource === "upload-file-1") {
+        file1Data = jsonDataObj;
+        console.log("file1Data", file1Data);
       }
-      if (fileSource === "upload-secondary") {
-        secondaryData = jsonDataObj;
-        console.log("secondaryData", secondaryData);
+      if (fileSource === "upload-file-2") {
+        file2Data = jsonDataObj;
+        console.log("file2Data", file2Data);
       }
     };
     const fileSource = e.target.name;
@@ -51,47 +55,42 @@ const Home = () => {
   //   console.log("fileSource", fileSource);
   //   console.log("e", e);
   //   // const promise = new Promise();
-  //   if (fileSource === "upload-primary") {
+  //   if (fileSource === "upload-file-1") {
   //     // promise.then();
-  //     const primaryData = readData(e);
-  //     console.log("primaryData", primaryData);
-  //     console.log("primaryData", primaryData[Promise]);
+  //     const file1Data = readData(e);
+  //     console.log("file1Data", file1Data);
+  //     console.log("file1Data", file1Data[Promise]);
   //   }
-  //   if (fileSource === "upload-secondary") {
-  //     const secondaryData = readData(e);
-  //     console.log("secondaryData", secondaryData);
+  //   if (fileSource === "upload-file-2") {
+  //     const file2Data = readData(e);
+  //     console.log("file2Data", file2Data);
   //   }
   // };
 
   const handleClick = () => {
-    // console.log(primaryData[0]);
-    // console.log(primaryData[0][primaryKeywordCol]);
-    // console.log(secondaryData);
+    // console.log(file1Data[0]);
+    // console.log(file1Data[0][primaryKeywordCol]);
+    // console.log(file2Data);
 
-    primaryData.map((primaryItem) => {
-      if (
-        primaryItem["Item"] === "Product"
-        // &&
-        // primaryItem["Is Visible"] === "true"
-      ) {
-        // console.log("You are here");
-        secondaryData.forEach((secondaryItem) => {
-          if (secondaryItem["Item"] === "Product") {
-            if (primaryItem["SKU"] === secondaryItem["SKU"]) {
-              // console.log('pri["SKU"]', primaryItem["SKU"]);
-              // console.log('sec["SKU"]', secondaryItem["SKU"]);
-              if (primaryItem["Price"] !== secondaryItem["Price"]) {
+    file1Data.map((primaryItem) => {
+      if (primaryItem[conditionKey] === conditionValue) {
+        file2Data.forEach((secondaryItem) => {
+          if (secondaryItem[conditionKey] === conditionValue) {
+            if (primaryItem[commonKey] === secondaryItem[commonKey]) {
+              // console.log('pri[commonKey]', primaryItem[commonKey]);
+              // console.log('sec[commonKey]', secondaryItem[commonKey]);
+              if (primaryItem[compareKey1] !== secondaryItem[compareKey2]) {
                 // console.log(" ");
-                // console.log(primaryItem["SKU"]);
-                // console.log(secondaryItem["SKU"]);
+                // console.log(primaryItem[commonKey]);
+                // console.log(secondaryItem[commonKey]);
                 // console.log(primaryItem["Price"]);
                 // console.log(secondaryItem["Price"]);
 
                 differences.push({
                   Name: primaryItem["Name"],
-                  SKU: primaryItem["SKU"],
-                  "Primary Price": primaryItem["Price"],
-                  "Secondary Price": secondaryItem["Price"],
+                  commonKey: primaryItem[commonKey],
+                  "Primary Price": primaryItem[compareKey1],
+                  "Secondary Price": secondaryItem[compareKey2],
                   "Product URL": `https://starmicroinc.net${primaryItem["Product URL"]}`,
                   "BigC Edit URL": `https://store-0yiknm.mybigcommerce.com/manage/products/edit/${primaryItem["ID"]}`,
                 });
@@ -103,6 +102,7 @@ const Home = () => {
     });
 
     const exportNewData = (data) => {
+      // export array-of-objects to xlsx file
       const newWorkbook = utils.book_new();
       const newWorksheet = utils.json_to_sheet(data);
       utils.book_append_sheet(newWorkbook, newWorksheet, "NewSheet");
@@ -120,17 +120,21 @@ const Home = () => {
           <p>Upload Primary file</p>
           <input
             type="file"
-            name="upload-primary"
+            name="upload-file-1"
             onChange={(e) => {
               readFile(e);
             }}
           />
+          {/* <input
+            type="text"
+            placeholder="Common Key"
+          /> */}
         </div>
         <div className="upload-file">
           <p>Upload Secondary file</p>
           <input
             type="file"
-            name="upload-secondary"
+            name="upload-file-2"
             onChange={(e) => {
               readFile(e);
             }}
@@ -141,7 +145,7 @@ const Home = () => {
             type="button"
             onClick={handleClick}
           >
-            Find differences{" "}
+            Export Differences{" "}
           </button>
         </div>
       </div>
