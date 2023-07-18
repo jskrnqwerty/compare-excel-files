@@ -1,22 +1,47 @@
 // import { useEffect, useRef, useState } from "react";
 import { read, utils, writeFile } from "xlsx";
 
-let file1Data = [];
-let file2Data = [];
-let outputData = []; //{ SKU: "", "Primary Price": "", "Secondary Price": "" };
+let data1 = [];
+let data2 = [];
+// const file1Template = [];
+// const neweggDIMM = [
+//   {
+//     "SellerPart#": "SKU",
+//     Manufacturer: "",
+//     ManufacturerPart#: "Manufacturer Part Number",
+//     UPC: "UPC/EAN",
+//     WebsiteShortTitle: "Title",
+//     BulletDescription: "Title",
+//     ProductDescription: "Title",
+//     ItemWeight: "Weight",
+//     PacksOrSets: "1",
+//     SellingPrice: "Price",
+//     Shipping: "Free",
+//     Inventory: "Current Stock"
+//     ItemImages: "Image URL (Import)",
+//     CountryOfOrigin: "USA",
+//     MEMType: "Desktop"
+//   },
+// ];
+const templates = {
+  file1: "file1",
+  // newegg: "newegg",
+  custom: "custom",
+};
 
-const commonKey = "SKU";
-// compare keys for "different-prices"
-// const comparePrimaryKey = "Price";
-// const compareSecondaryKey = "Price";
-// compare keys for "same-sku"
-const comparePrimaryKey = "SKU";
-const compareSecondaryKey = "SKU";
+// Set requirements here
+const uniqueKey1 = "SKU";
+const uniqueKey2 = "SKU";
+const compareKey1 = "SKU"; // "SKU", "Price"
+const compareKey2 = "SKU";
 const conditionKey = "Item";
-const conditionValue = "Product" || "None";
-// const [primaryHead, setPrimaryHead] = useState();
-// const [secondaryHead, setSecondaryHead] = useState();
-// const primaryH = useRef(null);
+const conditionValue = "Product"; // "Product" || "None";
+const operation = "same-values"; // "union" || "intersection" || "same-values" || "different-values";
+// const customTemplate = neweggTemplate;
+// const customTemplatename = "neweggTemplate";
+const outputTemplateName = templates.file1; // "file1Template" || "newegg" || "custom";
+const output = []; // "file1Template" || "neweggTemplate";
+
 const Home = () => {
   // ------------------------------------
   // handle functions
@@ -26,9 +51,9 @@ const Home = () => {
     const file = e.target.files[0];
     console.log("file.name = ", file.name);
     // console.log("file", file);
-    const fileData = await file.arrayBuffer();
-    // console.log("fileData", fileData);
-    const workbook = read(fileData);
+    const data = await file.arrayBuffer();
+    // console.log("data", data);
+    const workbook = read(data);
     // console.log("workbook", workbook);
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     // console.log("worksheet", worksheet);
@@ -42,145 +67,96 @@ const Home = () => {
     // return jsonDataObj;
     const saveData = (fileSource) => {
       console.log("fileSource", fileSource);
-      if (fileSource === "upload-file-1") {
-        file1Data = jsonDataObj;
-        console.log("file1Data", file1Data);
-      }
-      if (fileSource === "upload-file-2") {
-        file2Data = jsonDataObj;
-        console.log("file2Data", file2Data);
+      switch (fileSource) {
+        case "upload-file-1":
+          data1 = jsonDataObj;
+          console.log("data1", data1);
+          break;
+        case "upload-file-2":
+          data2 = jsonDataObj;
+          console.log("data2", data2);
+          break;
+        default:
+          console.log("Something went wrong.");
+          break;
       }
     };
+
     const fileSource = e.target.name;
     saveData(fileSource);
   };
 
-  // const readFile = (e) => {
-  //   // https://www.youtube.com/watch?v=YiYtwbnPfkY
-  //   // Learn JS Promises to make this work
-  //   const fileSource = e.target.name;
-  //   console.log("fileSource", fileSource);
-  //   console.log("e", e);
-  //   // const promise = new Promise();
-  //   if (fileSource === "upload-file-1") {
-  //     // promise.then();
-  //     const file1Data = readData(e);
-  //     console.log("file1Data", file1Data);
-  //     console.log("file1Data", file1Data[Promise]);
-  //   }
-  //   if (fileSource === "upload-file-2") {
-  //     const file2Data = readData(e);
-  //     console.log("file2Data", file2Data);
-  //   }
-  // };
+  const processAndFilterDataToFile = (e) => {
+    const filterData = (product1, product2, templateName) => {
+      switch (templateName) {
+        case "file1":
+          output.push(product1);
+          break;
+        // case "newegg": {
+        //   const srNo = index2 + 1;
+        //   const lineNo = index1 + 1;
+        //   output.push({
+        //     SrNo: srNo,
+        //     LineNo: lineNo,
+        //     SellerPartNo: product1["SKU"],
+        //     Manufacturer: product1["Name"].split(" ").at(0),
+        //     ManufacturerPartNo: product1["Manufacturer Part Number"],
+        //     UPC: product1["UPC/EAN"],
+        //     WebsiteShortTitle: product1["Name"],
+        //     BulletDescription: product1["Name"],
+        //     ProductDescription: product1["Name"],
+        //     ItemWeight: product1["Weight"],
+        //     PacksOrSets: "1",
+        //     SellingPrice: product1["Price"],
+        //     Shipping: "0",
+        //     Inventory: product1["Current Stock"],
+        //     ItemImages: product1["Image URL (Import)"],
+        //     CountryOfOrigin: "USA",
+        //     // MEMType: "Desktop",
+        //   });
+        //   break;
+        // }
+        case "custom":
+          console.log("case neweggTemplate triggered.");
+          output.push({
+            Name: product1["Name"],
+            uniqueKey: product1[uniqueKey1],
+            "File-1 Compare Key": product1[compareKey1],
+            "File-2 Compare Key": product2[compareKey2],
+            "Product URL": `https://starmicroinc.net${product1["Product URL"]}`,
+            "BigC Edit URL": `https://store-0yiknm.mybigcommerce.com/manage/products/edit/${product1["ID"]}`,
+          });
 
-  const processAndOutputData = (e) => {
-    // console.log(file1Data[0]);
-    // console.log(file1Data[0][primaryKeywordCol]);
-    // console.log(file2Data);
+          break;
+        default:
+          break;
+      }
+    };
 
-    file1Data.map((primaryItem) => {
+    data2.forEach((product2) => {
       const selectionName = e.target.name;
-      if (primaryItem[conditionKey] === conditionValue) {
-        file2Data.forEach((secondaryItem) => {
+      data1.map((product1) => {
+        if (product1[conditionKey] === conditionValue) {
           switch (selectionName) {
-            case "different-prices":
-              if (secondaryItem[conditionKey] === conditionValue) {
-                if (primaryItem[commonKey] === secondaryItem[commonKey]) {
-                  if (
-                    primaryItem[comparePrimaryKey] !==
-                    secondaryItem[compareSecondaryKey]
-                  ) {
-                    console.log("here");
-                    outputData.push({
-                      Name: primaryItem["Name"],
-                      commonKey: primaryItem[commonKey],
-                      "Primary Price": primaryItem[comparePrimaryKey],
-                      "Secondary Price": secondaryItem[compareSecondaryKey],
-                      "Product URL": `https://starmicroinc.net${primaryItem["Product URL"]}`,
-                      "BigC Edit URL": `https://store-0yiknm.mybigcommerce.com/manage/products/edit/${primaryItem["ID"]}`,
-                    });
+            case "different-values":
+              if (product2[conditionKey] === conditionValue) {
+                if (product1[uniqueKey1] === product2[uniqueKey2]) {
+                  if (product1[compareKey1] !== product2[compareKey2]) {
+                    filterData(product1, product2, outputTemplateName);
                   }
-                }
+                } else console.log(product2["SKU"], "not in list");
               }
               break;
-            case "same-sku":
-              if (primaryItem[commonKey] === secondaryItem[commonKey]) {
-                if (
-                  primaryItem[comparePrimaryKey] ===
-                  secondaryItem[compareSecondaryKey]
-                ) {
-                  outputData.push(primaryItem);
+            case "same-values":
+              if (product1[uniqueKey1] === product2[uniqueKey2]) {
+                if (product1[compareKey1] === product2[compareKey2]) {
+                  filterData(product1, product2, outputTemplateName);
                 }
               }
               break;
           }
-          // if (secondaryItem[conditionKey] === conditionValue) {
-          //   if (primaryItem[commonKey] === secondaryItem[commonKey]) {
-          //     // console.log('pri[commonKey]', primaryItem[commonKey]);
-          //     // console.log('sec[commonKey]', secondaryItem[commonKey]);
-
-          //     switch (selectionName) {
-          //       case "same-sku":
-          //         console.log("Triggered case: same-sku");
-          //         if (
-          //           primaryItem[comparePrimaryKey] ===
-          //           secondaryItem[compareSecondaryKey]
-          //         ) {
-          //           outputData.push(primaryItem);
-          //         }
-          //         break;
-          //       case "different-prices":
-          //         if (
-          //           primaryItem[comparePrimaryKey] !==
-          //           secondaryItem[compareSecondaryKey]
-          //         ) {
-          //           console.log("here");
-          //           outputData.push({
-          //             Name: primaryItem["Name"],
-          //             commonKey: primaryItem[commonKey],
-          //             "Primary Price": primaryItem[comparePrimaryKey],
-          //             "Secondary Price": secondaryItem[compareSecondaryKey],
-          //             "Product URL": `https://starmicroinc.net${primaryItem["Product URL"]}`,
-          //             "BigC Edit URL": `https://store-0yiknm.mybigcommerce.com/manage/products/edit/${primaryItem["ID"]}`,
-          //           });
-          //         }
-          //         break;
-          //       default:
-          //         console.log("default case triggered");
-          //     }
-
-          //     // if (
-          //     //   primaryItem[comparePrimaryKey] !==
-          //     //   secondaryItem[compareSecondaryKey]
-          //     // ) {
-          //     //   // console.log(" ");
-          //     //   // console.log(primaryItem[commonKey]);
-          //     //   // console.log(secondaryItem[commonKey]);
-          //     //   // console.log(primaryItem["Price"]);
-          //     //   // console.log(secondaryItem["Price"]);
-          //     //   switch (selectionName) {
-          //     //     case "different-prices":
-          //     //       outputData.push({
-          //     //         Name: primaryItem["Name"],
-          //     //         commonKey: primaryItem[commonKey],
-          //     //         "Primary Price": primaryItem[comparePrimaryKey],
-          //     //         "Secondary Price": secondaryItem[compareSecondaryKey],
-          //     //         "Product URL": `https://starmicroinc.net${primaryItem["Product URL"]}`,
-          //     //         "BigC Edit URL": `https://store-0yiknm.mybigcommerce.com/manage/products/edit/${primaryItem["ID"]}`,
-          //     //       });
-          //     //       break;
-          //     //     case "same-sku":
-          //     //       console.log("Triggered case: same-sku");
-          //     //       console.log(primaryItem);
-          //     //       outputData.push(primaryItem);
-          //     //       break;
-          //     //   }
-          //     // }
-          //   }
-          // }
-        });
-      }
+        }
+      });
     });
 
     const exportNewData = (data) => {
@@ -190,87 +166,66 @@ const Home = () => {
       utils.book_append_sheet(newWorkbook, newWorksheet, "NewSheet");
       writeFile(newWorkbook, "NewSheet.xlsx");
     };
-    console.log("outputData", outputData);
-    exportNewData(outputData);
+    console.log("outputData", output);
+    exportNewData(output);
   };
-
-  // const captureInput = (e) => {
-  //   console.log(e);
-  //   console.log(e.target.value);
-  //   const inputName = e.target.name;
-  //   const inputValue = e.target.value;
-  //   switch (inputName) {
-  //     case "primary-head":
-  //       setPrimaryHead(inputValue);
-  //       console.log("primaryHead", primaryHead);
-  //       break;
-  //     case "secondary-head":
-  //       setSecondaryHead(inputValue);
-  //       console.log("secondaryHead", secondaryHead);
-  //       break;
-  //   }
-  // };
-
-  // useEffect(() => {}, []);
 
   return (
     <>
       <h1>Home</h1>
       <div className="upload-files-container">
         <div className="upload-file">
-          <p>Upload Primary file</p>
+          <p>Upload file 1</p>
           <input
             type="file"
             name="upload-file-1"
             onChange={readFile}
           />
-          {/* <input
-            type="text"
-            placeholder="Read row from heading"
-            value={primaryHead}
-            name="primary-head"
-            ref={primaryH}
-            onChange={(e) => {
-              captureInput(e);
-            }}
-          /> */}
         </div>
         <div>
-          <p>Upload Secondary file</p>
+          <p>Upload file 2</p>
           <input
             type="file"
             name="upload-file-2"
             onChange={readFile}
           />
-          {/* <input
-            type="text"
-            placeholder="Read row from heading"
-            name="secondary-head"
-            onChange={(e) => {
-              captureInput(e);
-            }}
-          /> */}
         </div>
         <div>
           <p>
-            1. Extract from Primary, that have different prices, using custom
-            template:
+            {/* 1. Extract from File-1, that have different prices, using custom
+            template: */}
+            Extract from File-1, <br />
+            Operation: {operation} <br />
+            Output Template: {outputTemplateName} <br />
+            uniqueKey1 = {uniqueKey1}
+            <br />
+            uniqueKey2 = {uniqueKey2}
+            <br />
+            compareKey1 = {compareKey1}
+            <br />
+            compareKey2 = {compareKey2}
+            <br />
+            conditionKey = {conditionKey}
+            <br />
+            conditionValue = {conditionValue}
+            <br />
           </p>
           <button
             type="button"
-            name="different-prices"
-            onClick={processAndOutputData}
+            name={operation}
+            onClick={processAndFilterDataToFile}
           >
-            Export 1
+            Export
           </button>
-          <p>2. Extract from Primary, similar SKU, in Primary template</p>
+          {/* <p>2. Extract from File-1, similar SKU, in File-1 template</p>
           <button
             type="button"
-            name="same-sku"
-            onClick={processAndOutputData}
+            // name="same-sku"
+            name="same-values"
+            onClick={processAndFilterDataToFile}
           >
             Export 2
-          </button>
+          </button> */}
         </div>
       </div>
     </>
